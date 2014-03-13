@@ -222,6 +222,7 @@ static int calib_valid_handler(struct nl_msg *msg, void *arg)
 
 	if (!tb[NL80211_ATTR_TESTDATA]) {
 		fprintf(stderr, "no data!\n");
+		free(arg);
 		return NL_SKIP;
 	}
 
@@ -233,6 +234,7 @@ static int calib_valid_handler(struct nl_msg *msg, void *arg)
 	if (prms->radio_status) {
 		fprintf(stderr, "Fail to calibrate ith radio status (%d)\n",
 			(signed short)prms->radio_status);
+		free(arg);
 		return 2;
 	}
 #if 0
@@ -255,6 +257,7 @@ static int calib_valid_handler(struct nl_msg *msg, void *arg)
 	printf("Writing calibration data to %s\n", (char*) arg);
 	if (prepare_nvs_file(prms, arg)) {
 		fprintf(stderr, "Fail to prepare calibrated NVS file\n");
+		free(arg);
 		return 2;
 	}
 #if 0
@@ -262,6 +265,7 @@ static int calib_valid_handler(struct nl_msg *msg, void *arg)
 		"reboot the system\n\n",
 		NEW_NVS_NAME, CURRENT_NVS_NAME);
 #endif
+	free(arg);
 	return NL_SKIP;
 }
 
@@ -437,17 +441,22 @@ static int plt_tx_bip(struct nl80211_state *state, struct nl_cb *cb,
 	struct nlattr *key;
 	struct wl1271_cmd_cal_p2g prms;
 	int i;
-	char nvs_path[PATH_MAX];
+	char *nvs_path = NULL;
 
 	if (argc < 8) {
 		fprintf(stderr, "%s> Missing arguments\n", __func__);
 		return 2;
 	}
 
-	if (argc > 8)
-		strncpy(nvs_path, argv[8], strlen(argv[8]));
-	else
-		nvs_path[0] = '\0';
+	if (argc > 8) {
+		nvs_path = strdup(argv[8]);
+	} else {
+		nvs_path = strdup("");
+	}
+	if (!nvs_path) {
+		fprintf(stderr, "Could not allocate memory for nvs_path\n");
+		return 1;
+	}
 
 	memset(&prms, 0, sizeof(struct wl1271_cmd_cal_p2g));
 
@@ -458,6 +467,7 @@ static int plt_tx_bip(struct nl80211_state *state, struct nl_cb *cb,
 	key = nla_nest_start(msg, NL80211_ATTR_TESTDATA);
 	if (!key) {
 		fprintf(stderr, "fail to nla_nest_start()\n");
+		free(nvs_path);
 		return 1;
 	}
 
