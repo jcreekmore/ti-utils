@@ -2,7 +2,7 @@ CC = $(CROSS_COMPILE)gcc
 CFLAGS = -O2 -Wall
 CFLAGS += -DCONFIG_LIBNL20 -I$(NFSROOT)/usr/include -I$(NFSROOT)/include
 
-LDFLAGS += -L$(NFSROOT)/lib
+LDFLAGS += -L$(NFSROOT)/lib -L$(NFSROOT)/usr/lib
 LIBS += -lnl -lnl-genl -lm
 
 OBJS = nvs.o misc_cmds.o calibrator.o plt.o ini.o
